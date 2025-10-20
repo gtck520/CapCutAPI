@@ -4,6 +4,21 @@
   "port": 9001,
   "preview_router": "/draft/downloader",
   "is_upload_draft": false,
+
+  "api_keys": [
+    "your-api-key-1",
+    "your-api-key-2"
+  ],
+  "route_policies": {
+    "default": { "protected": true },
+    "/get_intro_animation_types": { "protected": false }
+  },
+  "rate_limit": {
+    "enabled": true,
+    "requests": 60,
+    "per_seconds": 60
+  },
+
   "oss_config": {
     "bucket_name": "your-bucket-name",
     "access_key_id": "your-access-key-id",

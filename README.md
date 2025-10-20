@@ -69,6 +69,25 @@ python capcut_server.py
 
 Once the server is started, you can access the related functions through the API interfaces.
 
+### Authentication
+
+- Configure `api_keys` in `config.json` to enable authentication. Optional `route_policies` allow per-route protection (`protected: true/false`), and `rate_limit` configures throttling.
+- Send either `X-API-Key: <your-key>` or `Authorization: Bearer <token>` with each protected request.
+- If `api_keys` is empty, authentication is disabled. If `rate_limit.enabled` is true, anonymous requests are still rate-limited.
+
+Example:
+
+```python
+import requests
+
+headers = {"X-API-Key": "your-api-key-1"}
+resp = requests.post("http://localhost:9001/add_text", headers=headers, json={
+    "text": "Hello, World!",
+    "start": 0,
+    "end": 3
+})
+print(resp.json())
+```
 ## Usage Examples
 
 ### Adding a Video

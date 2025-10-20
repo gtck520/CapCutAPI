@@ -67,6 +67,25 @@ python capcut_server.py
 
 服务器启动后，您可以通过 API 接口访问相关功能。
 
+### 鉴权
+
+- 在 `config.json` 配置 `api_keys` 白名单以启用鉴权；可选的 `route_policies` 控制路由是否受保护（`protected: true/false`），`rate_limit` 控制限流策略。
+- 受保护的接口调用需携带 `X-API-Key: <你的key>` 或 `Authorization: Bearer <token>` 请求头。
+- 当 `api_keys` 为空时不启用鉴权；若 `rate_limit.enabled` 为 true，匿名请求也会被限流。
+
+示例：
+
+```python
+import requests
+
+headers = {"X-API-Key": "your-api-key-1"}
+resp = requests.post("http://localhost:9001/add_text", headers=headers, json={
+    "text": "你好，世界！",
+    "start": 0,
+    "end": 3
+})
+print(resp.json())
+```
 ## 使用示例
 
 ### 添加视频

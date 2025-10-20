@@ -19,6 +19,10 @@ import random
 import uuid
 import json
 import codecs
+import os
+import logging
+import time
+import threading
 from add_audio_track import add_audio_track
 from add_video_track import add_video_track
 from add_text_impl import add_text_impl
@@ -31,10 +35,70 @@ from add_sticker_impl import add_sticker_impl
 from create_draft import create_draft
 from util import generate_draft_url as utilgenerate_draft_url
 
-from settings.local import IS_CAPCUT_ENV, DRAFT_DOMAIN, PREVIEW_ROUTER, PORT
+from settings.local import IS_CAPCUT_ENV, DRAFT_DOMAIN, PREVIEW_ROUTER, PORT, API_KEYS, ROUTE_POLICIES, RATE_LIMIT
+
 
 app = Flask(__name__)
- 
+
+# 新增：审计日志、鉴权与限流中间件
+audit_logger = logging.getLogger("audit")
+if not audit_logger.handlers:
+    audit_logger.setLevel(logging.INFO)
+    fh = logging.FileHandler(os.path.join(os.path.dirname(__file__), "audit.log"), encoding="utf-8")
+    formatter = logging.Formatter("%(asctime)s %(message)s")
+    fh.setFormatter(formatter)
+    audit_logger.addHandler(fh)
+
+rate_lock = threading.Lock()
+RATE_BUCKETS = {}
+
+
+def extract_api_key():
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return auth.split(" ", 1)[1].strip()
+    xkey = request.headers.get("X-API-Key")
+    return xkey or None
+
+
+def is_route_protected(path: str) -> bool:
+    policy = ROUTE_POLICIES.get(path) or ROUTE_POLICIES.get("default")
+    return bool(policy and policy.get("protected", False))
+
+
+@app.before_request
+def _auth_and_rate_limit():
+    path = request.path
+    method = request.method
+
+    # 记录审计日志（基础请求信息）
+    try:
+        audit_logger.info(f"{request.remote_addr} {method} {path}")
+    except Exception:
+        pass
+
+    # 鉴权：当配置了 API_KEYS 时强制校验；未配置则跳过鉴权
+    if not API_KEYS:
+        api_key = extract_api_key() or "anonymous"
+    else:
+        api_key = extract_api_key()
+        if not api_key or api_key not in API_KEYS:
+            return jsonify({"success": False, "error": "Unauthorized: invalid or missing API key"}), 401
+
+    # 路由维度保护与限流
+    if is_route_protected(path):
+        if RATE_LIMIT.get("enabled"):
+            max_req = int(RATE_LIMIT.get("requests", 60))
+            per_sec = int(RATE_LIMIT.get("per_seconds", 60))
+            now = int(time.time())
+            window = now // per_sec
+            bucket_key = (api_key, path, window)
+            with rate_lock:
+                count = RATE_BUCKETS.get(bucket_key, 0) + 1
+                RATE_BUCKETS[bucket_key] = count
+            if count > max_req:
+                return jsonify({"success": False, "error": "Too Many Requests"}), 429
+
 @app.route('/add_video', methods=['POST'])
 def add_video():
     data = request.get_json()

@@ -26,6 +26,11 @@ PORT = 9000
 OSS_CONFIG = []
 MP4_OSS_CONFIG=[]
 
+# 新增：鉴权与限流默认配置
+API_KEYS = []
+ROUTE_POLICIES = {"default": {"protected": False}}
+RATE_LIMIT = {"enabled": False, "requests": 100, "per_seconds": 60}
+
 # 尝试加载本地配置文件
 if os.path.exists(CONFIG_FILE_PATH):
     try:
@@ -60,6 +65,17 @@ if os.path.exists(CONFIG_FILE_PATH):
             if "mp4_oss_config" in local_config:
                 MP4_OSS_CONFIG = local_config["mp4_oss_config"]
 
+            # 新增：更新 API Keys 白名单
+            if "api_keys" in local_config:
+                API_KEYS = local_config["api_keys"] or []
+            
+            # 新增：更新路由权限策略
+            if "route_policies" in local_config:
+                ROUTE_POLICIES = local_config["route_policies"] or {"default": {"protected": True}}
+            
+            # 新增：更新限流配置
+            if "rate_limit" in local_config:
+                RATE_LIMIT = local_config["rate_limit"] or {"enabled": False, "requests": 100, "per_seconds": 60}
     except (json.JSONDecodeError, IOError):
         # 配置文件加载失败，使用默认配置
         pass

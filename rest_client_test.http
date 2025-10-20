@@ -1,6 +1,7 @@
 ###添加文本 
 POST http://localhost:9001/add_text
 Content-Type: application/json
+X-API-Key: your-api-key-1
 
 {
     "text": "你好，世界！",
@@ -14,6 +15,7 @@ Content-Type: application/json
 ###添加视频 
 POST http://localhost:9001/add_video
 Content-Type: application/json
+X-API-Key: your-api-key-1
 
 {
     "video_url": "http://example.com/video.mp4",
@@ -26,6 +28,7 @@ Content-Type: application/json
 ###保存草稿
 POST http://localhost:9001/save_draft
 Content-Type: application/json
+X-API-Key: your-api-key-1
 
 {
     "draft_id": "dfd_cat_1752912902_0cae2e04",
